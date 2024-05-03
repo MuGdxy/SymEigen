@@ -1,0 +1,365 @@
+from sympy import *
+from sympy.codegen import *
+import sympy.printing.c as ccode
+
+AuthorName = '''MuGdxy'''
+AuthorGitHub = '''https://github.com/MuGdxy'''
+AuthorEmail = '''lxy819469559@gmail.com'''
+
+def Vectorize(M : Matrix, expand_dir : str = 'col'):
+    if type(M) == EigenMatrix:
+        raise ValueError("Don't call Vectorize on EigenMatrix, use EigenMatrix.Vectorize instead")
+    V = zeros(M.shape[0]*M.shape[1], 1)
+    if expand_dir == 'col':
+        i = 0
+        # expand in column major order
+        for j in range(M.shape[1]):
+            for k in range(M.shape[0]):
+                V[i] = M[k, j]
+                i += 1
+    elif expand_dir == 'row':
+        i = 0
+        # expand in row major order
+        for j in range(M.shape[0]):
+            for k in range(M.shape[1]):
+                V[i] = M[j, k]
+                i += 1
+    else:
+        raise ValueError('expand_dir must be either "col" or "row"')
+    return V
+
+
+def VecDiff(VecF, VecX):
+    if VecF.shape[1] != 1 or VecX.shape[1] != 1:
+        raise ValueError('Inputs of VecDiff must be a column vector or a scalar')
+    
+    if(VecF.shape[0] == 1 and VecF.shape[1] == 1): # scalar
+        return VecF.jacobian(VecX).reshape(VecX.shape[0], 1)
+    else:
+        return VecF.jacobian(VecX).reshape(VecF.shape[0], VecX.shape[0])
+
+class EigenMatrix(MutableDenseMatrix):
+    def __init__(self, *args, **kwargs):
+        self.name = None
+        self.to_origin_element_name = {}
+        self.from_origin_element_name = {}
+        self.origin_matrix = None
+
+    def ValueType(self, Type = 'T'):
+        if self.shape[0] == 1 and self.shape[1] == 1:
+            return Type
+        elif self.shape[1] == 1:
+            return f'Eigen::Vector<{Type},{self.shape[0]}>'
+        elif self.shape[0] == 1:
+            return f'Eigen::RowVector<{Type},{self.shape[1]}>'
+        else:
+            return f'Eigen::Matrix<{Type},{self.shape[0]},{self.shape[1]}>'
+    
+    def RefType(self, Type = 'T'):
+        return f'{self.ValueType(Type)}&'
+    
+    def CRefType(self, Type = 'T'):
+        return f'const {self.ValueType(Type)}&'
+
+    # def [i, j]
+    def At(self, i, j):
+        '''
+        return the string representation of the element at (i, j)
+        e.g.
+            A.at(0, 0) -> 'A(0, 0)' for a matrix A
+            A.at(0, 0) -> 'A(0)' for a vector A
+            A.at(0, 0) -> 'A' for a scalar A
+        '''
+        if self.shape[0] == 1 and self.shape[1] == 1:
+            assert i == 0 and j == 0, 'Scalar has only one element'
+            return self.name
+        elif self.shape[1] == 1:
+            assert j == 0, 'Vector has only one column'
+            return self.name + f'({i})'
+        elif self.shape[0] == 1:
+            assert i == 0, 'Vector has only one row'
+            return self.name + f'({j})'
+        return self.name + f'({i},{j})'
+
+    def OriginMatrixName(self):
+        if self.origin_matrix is None:
+            return self.name
+        return self.origin_matrix.name
+    
+    def MatrixName(self):
+        return self.name
+    
+    def IsIndependent(self):
+        return self.origin_matrix is None
+
+    def Vectorize(self, Name, expand_dir : str = 'col'):
+        SymV = Vectorize(self, expand_dir)
+        Vector = EigenMatrix(SymV)
+        Vector.name = Name
+        Vector._build_remap(SymV)
+        Vector.origin_matrix = self
+        return Vector
+    
+    def _build_remap(self, M : MutableDenseMatrix):
+        assert self.shape == M.shape, 'Shape mismatch'
+        for i in range(M.shape[0]):
+            for j in range(M.shape[1]):
+                if(not M[i, j].is_number): # if it is a symbol
+                    self.to_origin_element_name[self.At(i, j)] = str(M[i, j])
+                    self.from_origin_element_name[str(M[i, j])] = self.At(i, j)
+
+class Eigen:
+    def Matrix(Name, M, N):
+        EMat = EigenMatrix(zeros(M,N))
+        if(M == 1 and N == 1):
+            EMat[0, 0] = Symbol(Name)
+        elif(N == 1):
+            for i in range(M):
+                EMat[i, 0] = Symbol(f'{Name}({i})')
+        elif(M == 1):
+            for i in range(N):
+                EMat[0, i] = Symbol(f'{Name}({i})')
+        else:
+            for i in range(M):
+                for j in range(N):
+                    EMat[i, j] = Symbol(f'{Name}({i},{j})')
+        EMat.name = Name
+        EMat.origin_matrix = EMat
+        return EMat
+    
+    def FromSympy(Name, M : MutableDenseMatrix):
+        EMat = EigenMatrix(M)
+        EMat.name = Name
+        EMat._build_remap(M)
+        EMat.origin_matrix = None
+        return EMat
+    
+    def Vector(Name, N):
+        return Eigen.Matrix(Name, N, 1)
+    
+    def RowVector(Name, N):
+        return Eigen.Matrix(Name, 1, N)
+    
+    def Scalar(Name):
+        return Eigen.Matrix(Name, 1, 1)
+
+class EigenPrinter(ccode.C11CodePrinter):
+    def _print_Pow(self, expr):
+        if expr.exp == -1:
+            return f'1.0 / ({self._print(expr.base)})'
+        if expr.exp == 0.5:
+            return f'sqrt({self._print(expr.base)})'
+        if expr.exp == 3/2:
+            return f'({self._print(expr.base)} * sqrt({self._print(expr.base)}))'
+        if expr.exp == 2:
+            return f'({self._print(expr.base)} * {self._print(expr.base)})'
+        if expr.exp == 5/2:
+            return f'({self._print(expr.base)} * {self._print(expr.base)} * sqrt({self._print(expr.base)}))'
+        if expr.exp == 3:
+            return f'({self._print(expr.base)} * {self._print(expr.base)} * {self._print(expr.base)})'
+        else:
+            return f'pow({self._print(expr.base)}, {self._print(expr.exp)})'
+    def _print_not_supported(self, expr):
+        print(f'Not supported: {expr}')
+
+class EigenFunctionInputClosure:
+    def __init__(self, printer : EigenPrinter, option_dict : dict, *args : EigenMatrix):
+        self.Args = args
+        self.printer = printer
+        self.option_dict = option_dict
+        
+    def __call__(self, FunctionName : str, expr : Expr, return_value_name:str = 'R'):
+        R = Eigen.Matrix(return_value_name, expr.shape[0], expr.shape[1])
+        FunctionDef = self._make_function_def(FunctionName, R, expr)
+        MaxLineLen = 80
+        
+        Comment = self._make_comment(R, expr)
+        CommentStr = '\n'.join(Comment)
+        MaxLineLen = max([len(line) for line in Comment])
+        
+        Content = self._make_content(R, expr)
+        ContentStr = '\n'.join(Content)
+        MaxLineLen = max([len(line) for line in Content])
+        
+        SepLine = '*' * (MaxLineLen + 4)
+        
+        return f'''{FunctionDef}
+{{
+/*{SepLine}
+Function generated by SymEigen.py 
+Author: {AuthorName}
+GitHub: {AuthorGitHub}
+E-Mail: {AuthorEmail}
+**{SepLine}
+{CommentStr}
+{SepLine}*/
+{ContentStr}
+}}'''
+
+    def _make_function_def(self, FunctionName, R, expr):
+        Vars = self.Args
+        T = 'T'
+        OutputT = R.RefType(T)
+        
+        Args = []
+        for i in range(len(Vars)):
+            Args.append(Vars[i].CRefType(T) + f' {Vars[i].MatrixName()}')
+        ArgStr = ', '.join(Args)
+        
+        return f'''template <typename T>
+void {FunctionName}({OutputT} {R.MatrixName()}, {ArgStr})'''
+
+    def _make_comment(self, R, expr):
+        Vars = self.Args
+        Comment = []
+        Comment.append(f'''LaTeX expression:
+//tex:$${R.MatrixName()} = {latex(expr)}$$\n''')
+        for var in Vars:
+            Comment.append(f'''Symbol Name Mapping:
+{var.name}:
+    -> {var.to_origin_element_name}
+    -> {var}''')
+        return Comment
+
+    
+    def _make_content(self, R, expr):
+        Vars = self.Args
+        Content = []
+        
+        if self.option_dict['CommonSubExpression']:
+            sub_exprs, simplified = cse(expr)
+            
+            Content.append('/* Sub Exprs */')
+            for i in range(len(sub_exprs)):
+                E = sub_exprs[i][1]
+                EStr = self.printer._print(E)
+                self._replace_symbol(EStr, Vars)
+                Content.append(f'auto {sub_exprs[i][0]} = {EStr};')
+            
+            Content.append('/* Simplified Expr */')
+            for S in simplified:
+                for i in range(R.shape[0]):
+                    for j in range(R.shape[1]):
+                        E = S[i,j]
+                        EStr = self.printer._print(E)
+                        EStr = self._replace_symbol(EStr, Vars)
+                        Content.append(f'{R.At(i, j)} = {EStr};')
+        else:
+            for i in range(R.shape[0]):
+                for j in range(R.shape[1]):
+                    E = expr[i, j]
+                    EStr = self.printer._print(E)
+                    EStr = self._replace_symbol(EStr, Vars)
+                    Content.append(f'{R.At(i, j)} = {EStr};')
+        return Content
+    
+    def _replace_symbol(self, Str, Vars):
+        for var in Vars:
+            for key, value in var.from_origin_element_name.items():
+                Str = Str.replace(key, value)
+        return Str
+    
+
+    
+class EigenFunctionGenerator:
+    def __init__(self, printer = EigenPrinter()):
+        self.printer = printer
+        self.option_dict = {
+            'MacroBeforeFunction': '',
+            'CommonSubExpression': True
+        }
+    
+    def MacroBeforeFunction(self, macro: str):
+        self.option_dict['MacroBeforeFunction'] = macro
+    
+    def DisableCommonSubExpression(self):
+        self.option_dict['CommonSubExpression'] = False
+
+    def Closure(self, *args : EigenMatrix):
+        return EigenFunctionInputClosure(self.printer, self.option_dict, *args)
+
+
+if __name__ == '__main__':
+    # %% [markdown]
+    # Say, we are calculating the Energy of a spring.
+    # $$
+    # E = \frac{1}{2} k (|\mathbf{x}-\mathbf{y}| - L_0)^2
+    # $$
+    # To compactly write the equation, we can define the following variables, fully 6 Dof:
+    # $$
+    # \mathbf{X} = 
+    # \begin{bmatrix}
+    # \mathbf{x} \\
+    # \mathbf{y} 
+    # \end{bmatrix}
+    # $$
+    # Then we can define such a matrix as follows:
+
+    # %%
+    X = Eigen.Vector('X', 6)
+    X
+
+    # %% [markdown]
+    # Other coefficients are defined as follows:
+
+    # %%
+    k = Eigen.Scalar('k')
+    L0 = Eigen.Scalar('L0')
+
+    # %% [markdown]
+    # It's easy to calculate the Energy as follows:
+
+    # %%
+    X_l = Matrix(X[0:3])
+    X_r = Matrix(X[3:6])
+    d = X_l - X_r 
+
+    E = k * (sqrt(d.T * d) - L0) / 2
+    E
+
+    # %% [markdown]
+    # We use `VecDiff` to calculate the Vec/Vec derivative, so the Gradient of the Energy is:
+
+    # %%
+    G = VecDiff(E, X)
+    G
+
+    # %% [markdown]
+    # So for the Hessian, we have:
+
+    # %%
+    H = VecDiff(G, X)
+    H
+
+    # %% [markdown]
+    # To generate Eigen Cpp code, we should do the following:
+    # 1. Declare a `EigenFunctionGenerator` as a context.
+    # 2. Wrap the Input Variable to a `Closure`.
+    # 3. Call the `Closure` by inputting the function name and `Expr` (e.g. the `E`, `G`, `H`).
+
+    # %%
+    Gen = EigenFunctionGenerator()
+    Closure = Gen.Closure(k, L0, X)
+
+    # %% [markdown]
+    # First, we generate the Eigen Cpp code for the Energy:
+
+    # %%
+    print(Closure('SpringEnergy', E, 'E'))
+
+    # %% [markdown]
+    # Then, Gradient:
+
+    # %%
+    print(Closure('SpringGradient', G, 'G'))
+
+    # %% [markdown]
+    # Finally, Hessian:
+
+    # %%
+    print(Closure('SpringHessian', H, 'H'))
+
+
+
+
+    
