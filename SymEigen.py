@@ -7,8 +7,8 @@ AuthorGitHub = '''https://github.com/MuGdxy'''
 AuthorEmail = '''lxy819469559@gmail.com'''
 
 def Vectorize(M : Matrix, expand_dir : str = 'col'):
-    if type(M) == EigenMatrix:
-        raise ValueError("Don't call Vectorize on EigenMatrix, use EigenMatrix.Vectorize instead")
+    # if type(M) == EigenMatrix:
+    #     raise ValueError("Don't call Vectorize on EigenMatrix, use EigenMatrix.Vectorize instead")
     V = zeros(M.shape[0]*M.shape[1], 1)
     if expand_dir == 'col':
         i = 0
@@ -30,9 +30,11 @@ def Vectorize(M : Matrix, expand_dir : str = 'col'):
 
 
 def VecDiff(VecF, VecX):
+    # if VecF has no shape attribute, it is a scalar
+    if not hasattr(VecF, 'shape'):
+        VecF = Matrix([VecF])
     if VecF.shape[1] != 1 or VecX.shape[1] != 1:
-        raise ValueError('Inputs of VecDiff must be a column vector or a scalar')
-    
+        raise ValueError(f'Inputs of VecDiff must be a column vector or a scalar, VecF[{VecF.shape[0]},{VecF.shape[1]}], VecX[{VecX.shape[0]},{VecX.shape[1]}]')
     if(VecF.shape[0] == 1 and VecF.shape[1] == 1): # scalar
         return VecF.jacobian(VecX).reshape(VecX.shape[0], 1)
     else:

@@ -122,31 +122,58 @@ For example, in Continuum Mechanics, we have the Deformation Gradient `F`, which
 ```python
 F = Eigen.Matrix('F', 3, 3)
 VecF = F.Vectorize('VecF')
-C = F.T * F - eye(3)
-VecC = C.Vectorize('VecC')
-G = VecDiff(VecC, VecF)
+Ic =  Trace(F.T*F)
+dIcdVecF = VecDiff(Ic, VecF)
 ```
 
 The output will be:
 $$
-\left[\begin{matrix}2 F(0,0) & 2 F(1,0) & 2 F(2,0) & 0 & 0 & 0 & 0 & 0 & 0\\F(0,1) & F(1,1) & F(2,1) & F(0,0) & F(1,0) & F(2,0) & 0 & 0 & 0\\F(0,2) & F(1,2) & F(2,2) & 0 & 0 & 0 & F(0,0) & F(1,0) & F(2,0)\\F(0,1) & F(1,1) & F(2,1) & F(0,0) & F(1,0) & F(2,0) & 0 & 0 & 0\\0 & 0 & 0 & 2 F(0,1) & 2 F(1,1) & 2 F(2,1) & 0 & 0 & 0\\0 & 0 & 0 & F(0,2) & F(1,2) & F(2,2) & F(0,1) & F(1,1) & F(2,1)\\F(0,2) & F(1,2) & F(2,2) & 0 & 0 & 0 & F(0,0) & F(1,0) & F(2,0)\\0 & 0 & 0 & F(0,2) & F(1,2) & F(2,2) & F(0,1) & F(1,1) & F(2,1)\\0 & 0 & 0 & 0 & 0 & 0 & 2 F(0,2) & 2 F(1,2) & 2 F(2,2)\end{matrix}\right]
+\left[\begin{matrix}2 F(0,0)\\2 F(1,0)\\2 F(2,0)\\2 F(0,1)\\2 F(1,1)\\2 F(2,1)\\2 F(0,2)\\2 F(1,2)\\2 F(2,2)\end{matrix}\right]
 $$
 
 SymEigen does the Element Name Mapping for you, which means, SymEigen doesn't care about the layout of the elements, the only thing it cares about is the unique element name. All differentiations are performed element-wise. The layout only affects the generated code. And you can freely substitute the `VecF` as `F`, when you generate the Eigen C++ code.
 
 ```python
 Gen = EigenFunctionGenerator()
-Closure = Gen.Closure(VecF) # Take VecF as Input
-print(Closure('dVecCdVecF', dVecCdVecF))
-
-Closure = Gen.Closure(F) # Take F as Input
-print(Closure('dVecCdF', dVecCdVecF))
+Closure = Gen.Closure(VecF)
+print(Closure('dIcdVecF', dIcdVecF))
+Closure = Gen.Closure(F)
+print(Closure('dIcdF', ddICddVecF))
 ```
-The output function declarations:
+The output function will be (I take the most important part here):
 ```cpp
 template <typename T>
-void dVecCdVecF(Eigen::Matrix<T,9,9>& R, const Eigen::Vector<T,9>& VecF);
+void dIcdVecF(Eigen::Vector<T,9>& R, const Eigen::Vector<T,9>& VecF)
+{
+R(0) = 2*VecF(0);
+R(1) = 2*VecF(1);
+R(2) = 2*VecF(2);
+R(3) = 2*VecF(3);
+R(4) = 2*VecF(4);
+R(5) = 2*VecF(5);
+R(6) = 2*VecF(6);
+R(7) = 2*VecF(7);
+R(8) = 2*VecF(8);
+}
+
 template <typename T>
-void dVecCdF(Eigen::Matrix<T,9,9>& R, const Eigen::Matrix<T,3,3>& F);
+void dIcdF(Eigen::Vector<T,9>& R, const Eigen::Matrix<T,3,3>& F)
+{
+R(0) = 2*F(0,0);
+R(1) = 2*F(1,0);
+R(2) = 2*F(2,0);
+R(3) = 2*F(0,1);
+R(4) = 2*F(1,1);
+R(5) = 2*F(2,1);
+R(6) = 2*F(0,2);
+R(7) = 2*F(1,2);
+R(8) = 2*F(2,2);
+}
 ```
 The `R` is the same, but the input is different. You can use the `VecF` or `F` as you like. But I recommend using the `VecF` as the input, because it's clearer to understand and use the code. Because the `Vectorize` operation is well-defined.
+
+### Final Takeaway
+
+- Always vectorize the Matrix to a Vector, then use the `VecDiff` function to calculate the derivative. The `SymEigen` will do the rest for you.
+- The default [Vectorization](https://en.wikipedia.org/wiki/Vectorization_(mathematics)) is column-wise.
+
