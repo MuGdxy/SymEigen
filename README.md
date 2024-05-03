@@ -17,7 +17,7 @@ This library is so simple that you can just copy the `SymEigen.py` file to your 
 
 ## Usage
 
-The [QuickStart](./QuickStart.ipynb) can be run using Jupyter Notebook [Highly Recommended]. 
+The [QuickStart](./QuickStart.ipynb)  [Highly Recommended :white_check_mark:] can be run using Jupyter Notebook. 
 You can use VSCode with Jupyter Notebook extension to run the code, or any other way you like.
 
 The code is also available in the [SymEigen.py](./SymEigen.py) source file. You can just run it in your Python environment.
