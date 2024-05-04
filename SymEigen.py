@@ -3,7 +3,7 @@ from sympy.codegen import *
 import sympy.printing.c as ccode
 
 AuthorName = '''MuGdxy'''
-AuthorGitHub = '''https://github.com/MuGdxy'''
+AuthorGitHub = '''https://github.com/MuGdxy/SymEigen'''
 AuthorEmail = '''lxy819469559@gmail.com'''
 
 class Sym:
