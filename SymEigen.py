@@ -208,14 +208,20 @@ E-Mail: {AuthorEmail}
             Args.append(Vars[i].CRefType(T) + f' {Vars[i].MatrixName()}')
         ArgStr = ', '.join(Args)
         
+        FOWARD_MACRO = self.option_dict['MacroBeforeFunction']
+        if len(FOWARD_MACRO) > 0:
+            FOWARD_MACRO = f'{FOWARD_MACRO} '
+        
         return f'''template <typename T>
-void {FunctionName}({OutputT} {R.MatrixName()}, {ArgStr})'''
+{FOWARD_MACRO}void {FunctionName}({OutputT} {R.MatrixName()}, {ArgStr})'''
 
     def _make_comment(self, R, expr):
         Vars = self.Args
         Comment = []
-        Comment.append(f'''LaTeX expression:
+        if self.option_dict['LatexComment']:
+            Comment.append(f'''LaTeX expression:
 //tex:$${R.MatrixName()} = {latex(expr)}$$\n''')
+
         for var in Vars:
             Comment.append(f'''Symbol Name Mapping:
 {var.name}:
@@ -262,13 +268,13 @@ void {FunctionName}({OutputT} {R.MatrixName()}, {ArgStr})'''
         return Str
     
 
-    
 class EigenFunctionGenerator:
     def __init__(self, printer = EigenPrinter()):
         self.printer = printer
         self.option_dict = {
             'MacroBeforeFunction': '',
-            'CommonSubExpression': True
+            'CommonSubExpression': True,
+            'LatexComment': True
         }
     
     def MacroBeforeFunction(self, macro: str):
@@ -276,6 +282,9 @@ class EigenFunctionGenerator:
     
     def DisableCommonSubExpression(self):
         self.option_dict['CommonSubExpression'] = False
+    
+    def DisableLatexComment(self):
+        self.option_dict['LatexComment'] = False
 
     def Closure(self, *args : EigenMatrix):
         return EigenFunctionInputClosure(self.printer, self.option_dict, *args)
