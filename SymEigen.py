@@ -5,7 +5,7 @@ import sympy.printing.c as ccode
 AuthorName = '''MuGdxy'''
 AuthorGitHub = '''https://github.com/MuGdxy/SymEigen'''
 AuthorEmail = '''lxy819469559@gmail.com'''
-
+__version__ = '0.1.0'
 class Sym:
     def Vectorize(M : Matrix, expand_dir : str = 'col'):
         # if type(M) == EigenMatrix:
