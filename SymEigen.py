@@ -148,18 +148,20 @@ class Eigen:
 
 class EigenPrinter(ccode.C11CodePrinter):
     def _print_Pow(self, expr):
+        str_base = f'({self._print(expr.base)})'
+        
         if expr.exp == -1:
-            return f'1.0 / ({self._print(expr.base)})'
+            return f'1.0 / {str_base}'
         if expr.exp == 0.5:
-            return f'sqrt({self._print(expr.base)})'
+            return f'sqrt({str_base})'
         if expr.exp == 3/2:
-            return f'({self._print(expr.base)} * sqrt({self._print(expr.base)}))'
+            return f'{str_base} * sqrt({str_base})'
         if expr.exp == 2:
-            return f'({self._print(expr.base)} * {self._print(expr.base)})'
+            return f'{str_base} * {str_base}'
         if expr.exp == 5/2:
-            return f'({self._print(expr.base)} * {self._print(expr.base)} * sqrt({self._print(expr.base)}))'
+            return f'{str_base} * {str_base} * sqrt({str_base})'
         if expr.exp == 3:
-            return f'({self._print(expr.base)} * {self._print(expr.base)} * {self._print(expr.base)})'
+            return f'{str_base} * {str_base} * {str_base}'
         else:
             return f'pow({self._print(expr.base)}, {self._print(expr.exp)})'
     def _print_not_supported(self, expr):
@@ -399,8 +401,5 @@ if __name__ == '__main__':
 
     # %%
     print(Closure('SpringHessian', H, 'H'))
-
-
-
 
     
