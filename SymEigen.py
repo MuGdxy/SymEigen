@@ -172,7 +172,11 @@ class EigenFunctionInputClosure:
         self.option_dict = option_dict
         
     def __call__(self, FunctionName : str, expr : Expr, return_value_name:str = 'R'):
-        R = Eigen.Matrix(return_value_name, expr.shape[0], expr.shape[1])
+        # if expr has no shape attribute, it is a scalar
+        if(not hasattr(expr, 'shape')):
+            R = Eigen.Scalar(return_value_name)
+        else:
+            R = Eigen.Matrix(return_value_name, expr.shape[0], expr.shape[1])
         FunctionDef = self._make_function_def(FunctionName, R, expr)
         MaxLineLen = 120
         # MaxLineLen = len(FunctionDef)
@@ -248,16 +252,24 @@ E-Mail: {AuthorEmail}
             
             Content.append('/* Simplified Expr */')
             for S in simplified:
+                # S has shape
                 for i in range(R.shape[0]):
                     for j in range(R.shape[1]):
-                        E = S[i,j]
+                        if hasattr(S, 'shape'):
+                            E = S[i,j]
+                        else:
+                            E = S
                         EStr = self.printer._print(E)
                         EStr = self._replace_symbol(EStr, Vars)
                         Content.append(f'{R.At(i, j)} = {EStr};')
+                
         else:
             for i in range(R.shape[0]):
                 for j in range(R.shape[1]):
-                    E = expr[i, j]
+                    if(hasattr(expr, 'shape')):
+                        E = expr[i, j]
+                    else:
+                        E = expr
                     EStr = self.printer._print(E)
                     EStr = self._replace_symbol(EStr, Vars)
                     Content.append(f'{R.At(i, j)} = {EStr};')
