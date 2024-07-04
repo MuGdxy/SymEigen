@@ -47,6 +47,7 @@ class EigenMatrix(MutableDenseMatrix):
         self.to_origin_element_name = {}
         self.from_origin_element_name = {}
         self.origin_matrix = None
+        self.IS_EIGEN_MATRIX = True
 
     def ValueType(self, Type = 'T'):
         if self.shape[0] == 1 and self.shape[1] == 1:
@@ -131,12 +132,15 @@ class Eigen:
         return EMat
     
     def FromSympy(Name, M : MutableDenseMatrix):
-        EMat = EigenMatrix(M)
-        EMat.name = Name
-        EMat._build_remap(M)
-        EMat.origin_matrix = None
+        if hasattr(M, 'shape'):
+            EMat = EigenMatrix(M)
+            EMat.name = Name
+            EMat._build_remap(M)
+            EMat.origin_matrix = None
+        else:
+            EMat = Eigen.Scalar(Name)
         return EMat
-    
+
     def Vector(Name, N):
         return Eigen.Matrix(Name, N, 1)
     
@@ -169,7 +173,12 @@ class EigenPrinter(ccode.C11CodePrinter):
 
 class EigenFunctionInputClosure:
     def __init__(self, printer : EigenPrinter, option_dict : dict, *args : EigenMatrix):
-        self.Args = args
+        Vars = [ var for var in args]
+        for i in range(len(Vars)):
+            if not hasattr(Vars[i], 'IS_EIGEN_MATRIX'):
+                Vars[i] = Eigen.FromSympy(Vars[i].name, Vars[i])
+                
+        self.Args = Vars
         self.printer = printer
         self.option_dict = option_dict
         
@@ -179,6 +188,7 @@ class EigenFunctionInputClosure:
             R = Eigen.Scalar(return_value_name)
         else:
             R = Eigen.Matrix(return_value_name, expr.shape[0], expr.shape[1])
+            
         FunctionDef = self._make_function_def(FunctionName, R, expr)
         MaxLineLen = 120
         # MaxLineLen = len(FunctionDef)
@@ -206,14 +216,16 @@ E-Mail: {AuthorEmail}
 {ContentStr}
 }}'''
 
-    def _make_function_def(self, FunctionName, R, expr):
+    def _make_function_def(self, FunctionName, R, expr): 
         Vars = self.Args
+               
         T = 'T'
         OutputT = R.RefType(T)
         
         Args = []
         for i in range(len(Vars)):
             Args.append(Vars[i].CRefType(T) + f' {Vars[i].MatrixName()}')
+        
         ArgStr = ', '.join(Args)
         
         FOWARD_MACRO = self.option_dict['MacroBeforeFunction']
@@ -257,7 +269,7 @@ E-Mail: {AuthorEmail}
                 # S has shape
                 for i in range(R.shape[0]):
                     for j in range(R.shape[1]):
-                        if hasattr(S, 'shape'):
+                        if S.is_Matrix:
                             E = S[i,j]
                         else:
                             E = S
@@ -398,8 +410,5 @@ if __name__ == '__main__':
 
     # %% [markdown]
     # Finally, Hessian:
-
-    # %%
-    print(Closure('SpringHessian', H, 'H'))
 
     
