@@ -154,21 +154,20 @@ class EigenPrinter(ccode.C11CodePrinter):
     def _print_Pow(self, expr):
         base = f'({self._print(expr.base)})'
         exp = f'({self._print(expr.exp)})'
-        
-        if expr.exp == -1:
-            return f'(1.0 / {base})'
-        if expr.exp == 0.5:
-            return f'sqrt({base})'
-        if expr.exp == 3/2:
-            return f'({base} * sqrt({base}))'
-        if expr.exp == 2:
-            return f'({base} * {base})'
-        if expr.exp == 5/2:
-            return f'({base} * {base} * sqrt({base}))'
-        if expr.exp == 3:
-            return f'({base} * {base} * {base})'
-        else:
-            return f'pow({base}, {exp})'
+        # if expr.exp == -1:
+        #     return f'(1.0 / {base})'
+        # if expr.exp == 0.5:
+        #     return f'sqrt({base})'
+        # if expr.exp == 3/2:
+        #     return f'({base} * sqrt({base}))'
+        # if expr.exp == 2:
+        #     return f'({base} * {base})'
+        # if expr.exp == 5/2:
+        #     return f'({base} * {base} * sqrt({base}))'
+        # if expr.exp == 3:
+        #     return f'({base} * {base} * {base})'
+        # else:
+        return f'std::pow({base}, {exp})'
 
     def _print_not_supported(self, expr):
         print(f'Not supported: {expr}')
