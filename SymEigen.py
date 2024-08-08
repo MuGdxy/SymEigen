@@ -262,7 +262,7 @@ E-Mail: {AuthorEmail}
             for i in range(len(sub_exprs)):
                 E = sub_exprs[i][1]
                 EStr = self.printer._print(E)
-                self._replace_symbol(EStr, Vars)
+                EStr = self._replace_symbol(EStr, Vars)
                 Content.append(f'auto {sub_exprs[i][0]} = {EStr};')
             
             Content.append('/* Simplified Expr */')
