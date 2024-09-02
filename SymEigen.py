@@ -111,6 +111,12 @@ class EigenMatrix(MutableDenseMatrix):
                 if(not M[i, j].is_number): # if it is a symbol
                     self.to_origin_element_name[self.At(i, j)] = str(M[i, j])
                     self.from_origin_element_name[str(M[i, j])] = self.At(i, j)
+    
+    def __rtruediv__(self, other):
+        if(self.shape[0]==1 and self.shape[1]==1):
+            return other / self[0, 0]
+        else:
+            raise ValueError('Only scalar is supported for right division')
 
 class Eigen:
     def Matrix(Name, M, N):
