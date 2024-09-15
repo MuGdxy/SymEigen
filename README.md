@@ -123,7 +123,17 @@ dIcdVecF = VecDiff(Ic, VecF)
 The output will be:
 
 $$
-\left[\begin{matrix}2 F(0,0)\\2 F(1,0)\\2 F(2,0)\\2 F(0,1)\\2 F(1,1)\\2 F(2,1)\\2 F(0,2)\\2 F(1,2)\\2 F(2,2)\end{matrix}\right]
+\begin{bmatrix}
+2 F(0,0)\\
+2 F(1,0)\\
+2 F(2,0)\\
+2 F(0,1)\\
+2 F(1,1)\\
+2 F(2,1)\\
+2 F(0,2)\\
+2 F(1,2)\\
+2 F(2,2)
+\end{bmatrix}
 $$
 
 SymEigen does the Element Name Mapping for you, which means, SymEigen doesn't care about the layout of the elements, the only thing it cares about is the unique element name. All differentiations are performed element-wise. The layout only affects the generated code. And you can freely substitute the `VecF` as `F`, when you generate the Eigen C++ code.
