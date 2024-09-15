@@ -27,11 +27,13 @@ The code is also available in the [SymEigen.py](./SymEigen.py) source file. You 
 I paste the code here for your quick view:
 
 Say we are calculating the Energy of a spring. The equation is as follows:
+
 $$
 E = \frac{1}{2} k (|\mathbf{x}-\mathbf{y}| - L_0)^2
 $$
 
 To compactly write the equation, we can define the following variables, fully 6 Dof:
+
 $$
 \mathbf{X} = 
 \begin{bmatrix}
@@ -39,6 +41,7 @@ $$
 \mathbf{y} 
 \end{bmatrix}
 $$
+
 ```python
 from SymEigen import *
 # Then we can define such a matrix as follows:
@@ -118,6 +121,7 @@ dIcdVecF = VecDiff(Ic, VecF)
 ```
 
 The output will be:
+
 $$
 \left[\begin{matrix}2 F(0,0)\\2 F(1,0)\\2 F(2,0)\\2 F(0,1)\\2 F(1,1)\\2 F(2,1)\\2 F(0,2)\\2 F(1,2)\\2 F(2,2)\end{matrix}\right]
 $$
