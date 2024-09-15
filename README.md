@@ -20,11 +20,7 @@ This library is so simple that you can just copy the `SymEigen.py` file to your 
 The [QuickStart](./QuickStart.ipynb)  [Highly Recommended :white_check_mark:] can be run using Jupyter Notebook. 
 You can use VSCode with Jupyter Notebook extension to run the code, or any other way you like.
 
-The code is also available in the [SymEigen.py](./SymEigen.py) source file. You can just run it in your Python environment.
-
 ## Quick View
-
-I paste the code here for your quick view:
 
 Say we are calculating the Energy of a spring. The equation is as follows:
 
@@ -37,10 +33,12 @@ To compactly write the equation, we can define the following variables, fully 6 
 $$
 \mathbf{X} = 
 \begin{bmatrix}
-\mathbf{x} \\
-\mathbf{y} 
+\mathbf{x}_l \\
+\mathbf{y}_r
 \end{bmatrix}
 $$
+
+I paste the code here for your quick view:
 
 ```python
 from SymEigen import *
@@ -71,7 +69,6 @@ print(Closure('SpringGradient', G, 'G'))
 # Finally, Hessian:
 print(Closure('SpringHessian', H, 'H'))
 ```
-
 
 And I just paste some output here, because the output is too long:
 
@@ -145,7 +142,9 @@ print(Closure('dIcdVecF', dIcdVecF))
 Closure = Gen.Closure(F)
 print(Closure('dIcdF', ddICddVecF))
 ```
+
 The output function will be (I take the most important part here):
+
 ```cpp
 template <typename T>
 void dIcdVecF(Eigen::Vector<T,9>& R, const Eigen::Vector<T,9>& VecF)
@@ -175,6 +174,7 @@ R(7) = 2*F(1,2);
 R(8) = 2*F(2,2);
 }
 ```
+
 The `R` is the same, but the input is different. You can use the `VecF` or `F` as you like. But I recommend using the `VecF` as the input, because it's clearer to understand and use the code. Because the `Vectorize` operation is well-defined.
 
 ### Final Takeaway
