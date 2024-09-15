@@ -25,7 +25,7 @@ You can use VSCode with Jupyter Notebook extension to run the code, or any other
 Say we are calculating the Energy of a spring. The equation is as follows:
 
 $$
-E = \frac{1}{2} k (|\mathbf{x}-\mathbf{y}| - L_0)^2
+E = \frac{1}{2} k (\|\mathbf{x}-\mathbf{y}\| - L_0)^2
 $$
 
 To compactly write the equation, we can define the following variables, fully 6 Dof:
