@@ -158,8 +158,8 @@ class Eigen:
 
 class EigenPrinter(ccode.C11CodePrinter):
     def _print_Pow(self, expr):
-        base = f'({self._print(expr.base)})'
-        exp = f'({self._print(expr.exp)})'
+        base = f'{self._print(expr.base)}'
+        exp = f'{self._print(expr.exp)}'
         # if expr.exp == -1:
         #     return f'(1.0 / {base})'
         # if expr.exp == 0.5:
@@ -339,83 +339,5 @@ E-Mail: %s
         Vec.template segment<M>(M * j) = Mat.template block<M,1>(0, j);
 }
 ''' % (AuthorName, AuthorGitHub, AuthorEmail)
-
-
-if __name__ == '__main__':
-    # %% [markdown]
-    # Say, we are calculating the Energy of a spring.
-    # $$
-    # E = \frac{1}{2} k (|\mathbf{x}-\mathbf{y}| - L_0)^2
-    # $$
-    # To compactly write the equation, we can define the following variables, fully 6 Dof:
-    # $$
-    # \mathbf{X} = 
-    # \begin{bmatrix}
-    # \mathbf{x} \\
-    # \mathbf{y} 
-    # \end{bmatrix}
-    # $$
-    # Then we can define such a matrix as follows:
-
-    # %%
-    X = Eigen.Vector('X', 6)
-    X
-
-    # %% [markdown]
-    # Other coefficients are defined as follows:
-
-    # %%
-    k = Eigen.Scalar('k')
-    L0 = Eigen.Scalar('L0')
-
-    # %% [markdown]
-    # It's easy to calculate the Energy as follows:
-
-    # %%
-    X_l = Matrix(X[0:3])
-    X_r = Matrix(X[3:6])
-    d = X_l - X_r 
-
-    E = k * (sqrt(d.T * d) - L0) / 2
-    E
-
-    # %% [markdown]
-    # We use `VecDiff` to calculate the Vec/Vec derivative, so the Gradient of the Energy is:
-
-    # %%
-    G = VecDiff(E, X)
-    G
-
-    # %% [markdown]
-    # So for the Hessian, we have:
-
-    # %%
-    H = VecDiff(G, X)
-    H
-
-    # %% [markdown]
-    # To generate Eigen Cpp code, we should do the following:
-    # 1. Declare a `EigenFunctionGenerator` as a context.
-    # 2. Wrap the Input Variable to a `Closure`.
-    # 3. Call the `Closure` by inputting the function name and `Expr` (e.g. the `E`, `G`, `H`).
-
-    # %%
-    Gen = EigenFunctionGenerator()
-    Closure = Gen.Closure(k, L0, X)
-
-    # %% [markdown]
-    # First, we generate the Eigen Cpp code for the Energy:
-
-    # %%
-    print(Closure('SpringEnergy', E, 'E'))
-
-    # %% [markdown]
-    # Then, Gradient:
-
-    # %%
-    print(Closure('SpringGradient', G, 'G'))
-
-    # %% [markdown]
-    # Finally, Hessian:
 
     
