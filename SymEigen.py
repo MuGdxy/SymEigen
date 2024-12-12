@@ -122,17 +122,17 @@ class Eigen:
     def Matrix(Name, M, N):
         EMat = EigenMatrix(zeros(M,N))
         if(M == 1 and N == 1):
-            EMat[0, 0] = Symbol(Name)
+            EMat[0, 0] = Symbol(Name, real=True)
         elif(N == 1):
             for i in range(M):
-                EMat[i, 0] = Symbol(f'{Name}({i})')
+                EMat[i, 0] = Symbol(f'{Name}({i})', real=True)
         elif(M == 1):
             for i in range(N):
-                EMat[0, i] = Symbol(f'{Name}({i})')
+                EMat[0, i] = Symbol(f'{Name}({i})', real=True)
         else:
             for i in range(M):
                 for j in range(N):
-                    EMat[i, j] = Symbol(f'{Name}({i},{j})')
+                    EMat[i, j] = Symbol(f'{Name}({i},{j})', real=True)
         EMat.name = Name
         EMat.origin_matrix = EMat
         return EMat
