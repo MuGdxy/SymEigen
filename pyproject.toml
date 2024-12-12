@@ -1,0 +1,17 @@
+[build-system]
+requires = ["setuptools >= 61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "SymEigen"
+authors = [
+    {name = "Lu Xinyu", email = "lxy819469559@gmail.com"}
+]
+maintainers = [
+    {name = "Lu Xinyu", email = "lxy819469559@gmail.com"}
+]
+readme = "README.md"
+license = {file = "LICENSE"}
+version = "0.1.0"
+dependencies = ["sympy"]
+requires-python = ">=3.10"
