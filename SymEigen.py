@@ -301,7 +301,14 @@ E-Mail: {AuthorEmail}
             for key, value in var.from_origin_element_name.items():
                 Str = Str.replace(key, value)
         return Str
-    
+
+def Subs(Expr, SubsList:list[tuple[EigenMatrix, Matrix]]):
+    new_dict = {}
+    for key, value in SubsList:
+        for i in range(value.shape[0]):
+            for j in range(value.shape[1]):
+                new_dict[key.At(i, j)] = value[i, j]
+    return Expr.subs(new_dict)
 
 class EigenFunctionGenerator:
     def __init__(self, printer = EigenPrinter()):
