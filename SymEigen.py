@@ -264,13 +264,14 @@ E-Mail: {AuthorEmail}
         
         if self.option_dict['CommonSubExpression']:
             sub_exprs, simplified = cse(expr)
+            cse_prefix = self.option_dict['CommonSubExprPrefix']
             
             Content.append('/* Sub Exprs */')
             for i in range(len(sub_exprs)):
                 E = sub_exprs[i][1]
                 EStr = self.printer._print(E)
                 EStr = self._replace_symbol(EStr, Vars)
-                Content.append(f'auto {sub_exprs[i][0]} = {EStr};')
+                Content.append(f'auto {cse_prefix}{sub_exprs[i][0]} = {EStr};')
             
             Content.append('/* Simplified Expr */')
             for S in simplified:
@@ -309,7 +310,8 @@ class EigenFunctionGenerator:
         self.option_dict = {
             'MacroBeforeFunction': '',
             'CommonSubExpression': True,
-            'LatexComment': True
+            'LatexComment': True,
+            'CommonSubExprPrefix': ''
         }
     
     def MacroBeforeFunction(self, macro: str):
@@ -320,6 +322,9 @@ class EigenFunctionGenerator:
     
     def DisableLatexComment(self):
         self.option_dict['LatexComment'] = False
+    
+    def CommonSubExprPrefix(self, prefix: str):
+        self.option_dict['CommonSubExprPrefix'] = prefix
 
     def Closure(self, *args : EigenMatrix):
         return EigenFunctionInputClosure(self.printer, self.option_dict, *args)
