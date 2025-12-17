@@ -1,6 +1,7 @@
 from sympy import *
 from sympy.codegen import *
 import sympy.printing.c as ccode
+import re
 
 AuthorName = '''MuGdxy'''
 AuthorGitHub = '''https://github.com/MuGdxy/SymEigen'''
@@ -119,7 +120,11 @@ class EigenMatrix(MutableDenseMatrix):
             raise ValueError('Only scalar is supported for right division')
 
 class Eigen:
+    # x+number like x0, x10, ... will be used as CommonSubExpression variable
+    regex_x_number = re.compile(r'^(x)(\d+)$')
     def Matrix(Name, M, N):
+        # check it Name matches x+number pattern
+        assert not Eigen.regex_x_number.match(Name), 'Name cannot match pattern x+number like x0, x10, ..., which is reserved for CommonSubExpression variable names'
         EMat = EigenMatrix(zeros(M,N))
         if(M == 1 and N == 1):
             EMat[0, 0] = Symbol(Name, real=True)
